@@ -4,19 +4,24 @@
 
 A hidden emoji, 20 turns, and only yes/no answers. One LLM (the **Guess** model) asks questions and makes guesses; a second LLM (the **Judge** model) knows the answer and replies with nothing but YES or NO. Every game shows the full question log with per-call time, tokens and real cost, so you can compare how well different models narrow things down.
 
-All models (Claude and GPT) are reached through the [EvoLink](https://evolink.ai) gateway, so a single API key is all you need. The full specification is in [spec.md](spec.md) (Chinese).
+All models (Claude and GPT) are reached through the [EvoLink](https://evolink.ai?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=top_cta) gateway, so a single API key is all you need. The full specification is in [spec.md](spec.md) (Chinese).
+
+<p align="center">
+  <img src="docs/demo-en.gif" alt="A full game replayed in 20 seconds: Claude Sonnet 5.5 finds the hidden emoji on turn 10" width="320" />
+</p>
 
 ## Requirements
 
 - Python 3.11 or newer
 - [uv](https://docs.astral.sh/uv/) (recommended) or plain `pip`
 - An EvoLink account with some credits
+- [ffmpeg](https://ffmpeg.org/) on your `PATH`, only for video recording (macOS: `brew install ffmpeg`)
 
 ## Quick start
 
 ### 1. Get an EvoLink API key
 
-1. Open <https://evolink.ai/dashboard/keys> and sign in (register first if you have no account).
+1. Open [evolink.ai/dashboard/keys](https://evolink.ai/dashboard/keys?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=api_key) and sign in (register first if you have no account).
 2. Create a new API key and copy it. It usually starts with `sk-`.
 
 ### 2. Put the key in the environment file
@@ -66,6 +71,19 @@ The result card shows:
 
 If a model call fails, the game stops in an error state and you can click retry to continue the same game.
 
+## Video recording
+
+Keep **Record video** ticked before you click start. The page then records every step of the game, and when the game ends it makes a video automatically:
+
+- 20 seconds long, 1080×1920 (9:16), H.264 MP4, 30 fps
+- The first 16 seconds replay the whole game, sped up to fit. The last 4 seconds hold on the answer and the totals
+- The header shows the real elapsed time and the speed-up factor
+- The watermark sits in the bottom right corner: "Opensourced by Cheer Lin" in English, "开源产品来自：林悅己" in Chinese
+
+When it is ready, a preview and a download button appear under the answer. The file is also saved to `recordings/emoji20q-<model>-<timestamp>.mp4`. A game that ends in an error is not exported until you retry and it finishes.
+
+The page draws the 600 frames itself and the server encodes them with ffmpeg, so nothing is captured from your screen and you can leave the tab in the background.
+
 ## Set it up with an AI agent
 
 If you use a coding agent (Claude Code, Cursor, Codex and so on), open this folder in it and paste the prompt below. The agent installs everything, opens the browser so you can sign in and get the key, writes the key to `.env`, and starts the app.
@@ -79,7 +97,8 @@ Set up and run this project for me. Follow these steps in order.
    If .env already contains a real EVOLINK_API_KEY (not empty and not
    "your_key_here"), skip to step 5.
 
-3. Open https://evolink.ai/dashboard/keys in a browser.
+3. Open this URL in a browser (quote it if you pass it to a shell command):
+   https://evolink.ai/dashboard/keys?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=agent_prompt
    - If you have a browser tool, use it. Otherwise run the system command
      (macOS: open <url>, Linux: xdg-open <url>, Windows: start <url>).
    - If the page asks for a login, stop and wait for me to sign in or
@@ -138,7 +157,7 @@ Only `EVOLINK_API_KEY` is required. Restart the server after changing `.env`. Ea
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `EVOLINK_API_KEY` | required | EvoLink key from <https://evolink.ai/dashboard/keys> |
+| `EVOLINK_API_KEY` | required | EvoLink API key |
 | `EVOLINK_BASE_URL` | `https://direct.evolink.ai` | Gateway address. Use `https://api.evolink.ai` if the default line is unreachable |
 | `JUDGE_MODEL` | `claude-sonnet-5-5` | Default Judge model. The page dropdown overrides it |
 | `QUESTION_LANGUAGE` | `中文` | Question language for the batch script. The page uses its own language switch |
@@ -178,6 +197,7 @@ app/guesser.py   Prompt for the Guess model (never contains the answer)
 app/judge.py     Prompt for the Judge model
 app/llm.py       EvoLink client for Claude and GPT interfaces
 app/batch.py     Batch runs and statistics
+app/recording.py Video encoding with ffmpeg
 app/emojis.py    Candidate emoji set
 app/config.py    Environment variables and model registry
 static/          Web page (plain HTML, CSS, JS)
@@ -191,8 +211,9 @@ Game state lives in memory, so games are lost when the server restarts.
 | Problem | What to do |
 |---|---|
 | Banner at the top of the page says the key is missing | `EVOLINK_API_KEY` is empty in `.env`. Fill it in and restart the server |
-| Game stops with an authentication error | The key is wrong, revoked, or still the placeholder. Create a new one at <https://evolink.ai/dashboard/keys> |
+| Game stops with an authentication error | The key is wrong, revoked, or still the placeholder. Create a new one (see Quick start, step 1) |
 | Game stops with a balance or quota error | Top up credits in the EvoLink dashboard |
 | Timeouts or connection errors | Set `EVOLINK_BASE_URL=https://api.evolink.ai`, or raise `LLM_TIMEOUT` |
+| Video fails with "ffmpeg" in the message | Install ffmpeg (`brew install ffmpeg`) and restart the server |
 | Changes to `.env` have no effect | Restart the server. `--reload` only watches code files |
 | On macOS with a system proxy | Requests to the gateway go through the proxy. Requests to `127.0.0.1` and `localhost` connect directly, so a local mock gateway still works |

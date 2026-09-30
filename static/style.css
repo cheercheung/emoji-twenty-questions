@@ -117,3 +117,13 @@ button.ghost { background: transparent; border: 1px solid var(--muted); color: v
 .ms.cost { width: 70px; }
 .rows .ms.cost { color: var(--ink); }
 @media (max-width: 640px) { .ms.cost { display: none; } }
+
+/* 录制 */
+.setup label.check { flex-direction: row; align-items: center; gap: 8px; font: 14px/1.2 inherit; font-family: inherit; text-transform: none; letter-spacing: 0; color: var(--ink); padding-bottom: 10px; }
+.video { text-align: center; padding-bottom: 22px; }
+.video:empty { display: none; }
+.video video { display: block; margin: 0 auto 12px; height: 480px; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); }
+.video .hint { display: inline-flex; align-items: center; gap: 8px; margin: 8px 0 0; font-family: var(--mono); }
+.video .err { color: var(--err); font-size: 13px; }
+.video .btns { display: flex; justify-content: center; }
+a.ghost { display: inline-block; border: 1px solid var(--muted); color: var(--ink); padding: 8px 16px; border-radius: 10px; font-size: 14px; text-decoration: none; }

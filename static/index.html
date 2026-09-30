@@ -22,6 +22,7 @@
       <label><span data-i18n="guesserModel"></span><select id="model"></select></label>
       <label><span data-i18n="judgeModel"></span><select id="judge"></select></label>
       <label><span data-i18n="secretEmoji"></span><select id="emoji"></select></label>
+      <label class="check"><input type="checkbox" id="record" checked /><span data-i18n="record"></span></label>
       <button id="start" class="primary" data-i18n="start"></button>
       <p class="hint" data-i18n="hint"></p>
     </section>
@@ -52,6 +53,7 @@
       <ol id="rows" class="rows"></ol>
 
       <div id="reveal" class="reveal"></div>
+      <div id="video" class="video"></div>
 
       <div class="overview">
         <table>
@@ -72,6 +74,7 @@
     </section>
   </main>
 
+  <script src="/static/recorder.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

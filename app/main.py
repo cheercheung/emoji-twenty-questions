@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -13,6 +13,7 @@ from . import config
 from .batch import batches
 from .emojis import EMOJIS
 from .game import GameError, store
+from .recording import RecordingError, recordings
 
 app = FastAPI(title="Emoji 二十问", version="0.1.0")
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -41,6 +42,12 @@ class BatchBody(BaseModel):
     gamesPerModel: int = Field(default=5, ge=1, le=50)
     judgeModel: str | None = None
     concurrency: int = Field(default=3, ge=1, le=8)
+
+
+class RecordingBody(BaseModel):
+    label: str = "game"
+    fps: int = Field(default=30, ge=1, le=60)
+    frames: int = Field(default=600, ge=1, le=3600)
 
 
 def _game_or_404(game_id: str):
@@ -138,6 +145,52 @@ def get_batch(batch_id: str):
         return batches.get(batch_id).view()
     except KeyError as e:
         raise HTTPException(404, str(e))
+
+
+# ---------- 录制 ----------
+
+def _recording_or_404(recording_id: str):
+    try:
+        return recordings.get(recording_id)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.post("/api/recordings")
+async def create_recording(body: RecordingBody):
+    try:
+        rec = await recordings.start(body.label, body.fps, body.frames)
+    except RecordingError as e:
+        raise HTTPException(503, str(e))
+    return {"id": rec.id}
+
+
+@app.post("/api/recordings/{recording_id}/frames")
+async def add_frames(recording_id: str, request: Request):
+    rec = _recording_or_404(recording_id)
+    try:
+        await rec.write(await request.body())
+    except RecordingError as e:
+        raise HTTPException(500, str(e))
+    return {"ok": True}
+
+
+@app.post("/api/recordings/{recording_id}/finish")
+async def finish_recording(recording_id: str):
+    rec = _recording_or_404(recording_id)
+    try:
+        path = await rec.finish()
+    except RecordingError as e:
+        raise HTTPException(500, str(e))
+    return {"id": rec.id, "url": f"/api/recordings/{rec.id}/video", "filename": path.name}
+
+
+@app.get("/api/recordings/{recording_id}/video")
+async def get_recording(recording_id: str):
+    rec = _recording_or_404(recording_id)
+    if not rec.done or not rec.path.exists():
+        raise HTTPException(409, "视频尚未生成")
+    return FileResponse(rec.path, media_type="video/mp4", filename=rec.path.name)
 
 
 # ---------- 静态页面 ----------

@@ -20,6 +20,11 @@ const I18N = {
     secretEmoji: "隐藏 emoji",
     random: "随机",
     start: "开始",
+    record: "录制视频（结束后自动生成 20 秒 9:16 MP4）",
+    rendering: (p) => `正在生成视频… ${p}%`,
+    download: "下载视频",
+    watermark: "开源产品来自：林悅己",
+    videoFailed: "视频生成失败：",
     hint: "Judge 只看到隐藏 emoji 和当前问题，并且只能回答 Yes 或 No。Guess 模型永远看不到答案。",
     guessEyebrow: "Guess · 猜测模型",
     judgeEyebrow: "Judge · 裁判模型",
@@ -60,6 +65,11 @@ const I18N = {
     secretEmoji: "Secret emoji",
     random: "Random",
     start: "Start",
+    record: "Record video (a 20-second 9:16 MP4 is made when the game ends)",
+    rendering: (p) => `Rendering video… ${p}%`,
+    download: "Download video",
+    watermark: "Opensourced by Cheer Lin",
+    videoFailed: "Video failed: ",
     hint: "The judge sees only the secret emoji and the current question, and may answer only Yes or No. The guess model never sees the answer.",
     guessEyebrow: "Guess model",
     judgeEyebrow: "Judge model",
@@ -101,7 +111,7 @@ const t = (k, ...a) => (typeof I18N[lang][k] === "function" ? I18N[lang][k](...a
 
 let META = null;
 let EMOJIS = [];
-const state = { game: null, running: false };
+const state = { game: null, running: false, rec: null };
 
 // ---------- 格式化 ----------
 const secs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1));
@@ -222,6 +232,36 @@ function draw() {
   $("overview-rows").innerHTML = row("", t("rowGuess"), gm, s.guess) + row("", t("rowJudge"), jm, s.judge) + row("total", t("rowTotal"), null, s.total);
   const est = s.total.estimatedCalls || 0;
   $("cost-note").textContent = t("costNote") + (est ? " " + t("estNote", est) : "");
+  record();
+}
+
+// ---------- 录制 ----------
+// 每次重绘记一张快照；对局结束后自动导出视频
+function record() {
+  const rec = state.rec;
+  if (!rec || rec.done) return;
+  Recorder.snap(rec, state.game);
+  if (state.game.status === "won" || state.game.status === "lost") {
+    rec.done = true;
+    exportVideo(rec);
+  }
+}
+
+async function exportVideo(rec) {
+  const box = $("video");
+  const mine = () => state.rec === rec; // 期间没有重开或放弃
+  box.innerHTML = `<p class="hint">${spin} <span id="_vp">${t("rendering", 0)}</span></p>`;
+  try {
+    const v = await Recorder.render(rec, { t, modelOf, emojiName }, (p) => {
+      if (mine()) $("_vp").textContent = t("rendering", Math.round(p * 100));
+    });
+    if (!mine()) return;
+    box.innerHTML = `<video src="${v.url}" controls autoplay muted loop playsinline></video>
+      <div class="btns"><a class="ghost" href="${v.url}" download="${esc(v.filename)}">${t("download")}</a></div>
+      <p class="hint">recordings/${esc(v.filename)}</p>`;
+  } catch (e) {
+    if (mine()) box.innerHTML = `<p class="err">${t("videoFailed")}${esc(e.message)}</p>`;
+  }
 }
 
 // ---------- 对局流程 ----------
@@ -230,6 +270,8 @@ async function start() {
   $("game").classList.remove("hidden");
   state.game = { status: "playing", turnsUsed: 0, maxTurns: META.maxTurns, history: [], pending: null, model: $("model").value, judgeModel: $("judge").value };
   state.running = true;
+  state.rec = $("record").checked ? Recorder.create() : null;
+  $("video").innerHTML = "";
   draw();
   try {
     state.game = await api("/api/games", {
@@ -276,6 +318,8 @@ async function retry() {
 function reset() {
   state.running = false;
   state.game = null;
+  state.rec = null;
+  $("video").innerHTML = "";
   $("game").classList.add("hidden");
   $("setup").classList.remove("hidden");
   document.title = t("appName");

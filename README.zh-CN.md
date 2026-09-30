@@ -4,19 +4,20 @@
 
 藏好一个 emoji，给模型 20 个回合，只能得到“是”或“否”的回答。一个大模型（**Guess** 猜测模型）负责提问和猜测，另一个大模型（**Judge** 裁判模型）知道答案，只回答 YES 或 NO。每一局都会列出完整的提问记录，以及每次调用的用时、Tokens 和真实花费，方便比较不同模型缩小范围的能力。
 
-所有模型（Claude 和 GPT）都通过 [EvoLink](https://evolink.ai) 网关调用，只需要一个 API Key。完整规格见 [spec.md](spec.md)。
+所有模型（Claude 和 GPT）都通过 [EvoLink](https://evolink.ai?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=top_cta) 网关调用，只需要一个 API Key。完整规格见 [spec.md](spec.md)。
 
 ## 环境要求
 
 - Python 3.11 或更高版本
 - [uv](https://docs.astral.sh/uv/)（推荐），或者直接用 `pip`
 - 一个有余额的 EvoLink 账号
+- [ffmpeg](https://ffmpeg.org/)，需要在 `PATH` 里，只有录制视频时用到（macOS：`brew install ffmpeg`）
 
 ## 快速开始
 
 ### 1. 领取 EvoLink API Key
 
-1. 打开 <https://evolink.ai/dashboard/keys> 并登录（没有账号先注册）。
+1. 打开 [evolink.ai/dashboard/keys](https://evolink.ai/dashboard/keys?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=api_key) 并登录（没有账号先注册）。
 2. 新建一个 API Key 并复制，通常以 `sk-` 开头。
 
 ### 2. 把 Key 填入环境文件
@@ -66,6 +67,19 @@ python3.11 -m venv .venv
 
 如果某次模型调用失败，对局会停在错误状态，点击“重试”可以继续同一局。
 
+## 录制视频
+
+点击开始前保持勾选**录制视频**。页面会记录对局的每一步，对局结束后自动生成视频：
+
+- 时长 20 秒，1080×1920（9:16），H.264 MP4，30 帧
+- 前 16 秒加速回放整局过程，后 4 秒停在答案和合计数据上
+- 头部显示真实用时和加速倍数
+- 右下角有水印：中文界面是“开源产品来自：林悅己”，英文界面是 “Opensourced by Cheer Lin”
+
+生成后，答案下方会出现预览和下载按钮，文件同时保存在 `recordings/emoji20q-<模型>-<时间>.mp4`。对局出错时不会导出，重试并跑完后才会生成。
+
+600 帧画面由页面自己绘制，再交给服务端用 ffmpeg 编码，不会采集你的屏幕，标签页放到后台也不影响。
+
 ## 让 AI Agent 帮你配置
 
 如果你用编程 Agent（Claude Code、Cursor、Codex 等），在 Agent 里打开本项目目录，把下面这段提示词发给它。Agent 会安装依赖，打开浏览器让你登录并获取 Key，把 Key 写进 `.env`，然后启动项目。
@@ -79,7 +93,8 @@ python3.11 -m venv .venv
    如果 .env 里已经有真实的 EVOLINK_API_KEY（不为空，也不是
    "your_key_here"），直接跳到第 5 步。
 
-3. 在浏览器中打开 https://evolink.ai/dashboard/keys 。
+3. 在浏览器中打开下面的网址（传给 shell 命令时要加引号）：
+   https://evolink.ai/dashboard/keys?utm_source=github&utm_medium=readme&utm_campaign=emoji-twenty-questions&utm_content=agent_prompt
    - 如果你有浏览器工具，就用它打开；否则执行系统命令
      （macOS：open <网址>，Linux：xdg-open <网址>，Windows：start <网址>）。
    - 如果页面要求登录，停下来等我自己登录或注册。
@@ -137,7 +152,7 @@ uv run python scripts/run_batch.py --models claude-opus-5-5 gpt-6.1-sol --games 
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `EVOLINK_API_KEY` | 必填 | EvoLink 密钥，在 <https://evolink.ai/dashboard/keys> 领取 |
+| `EVOLINK_API_KEY` | 必填 | EvoLink 密钥 |
 | `EVOLINK_BASE_URL` | `https://direct.evolink.ai` | 网关地址。默认线路不通时换成 `https://api.evolink.ai` |
 | `JUDGE_MODEL` | `claude-sonnet-5-5` | 默认裁判模型，页面下拉框可以覆盖 |
 | `QUESTION_LANGUAGE` | `中文` | 批量脚本的提问语言。网页以右上角的语言切换为准 |
@@ -177,6 +192,7 @@ app/guesser.py   猜测模型的提示词（永远不含答案）
 app/judge.py     裁判模型的提示词
 app/llm.py       EvoLink 客户端，适配 Claude 和 GPT 两种接口
 app/batch.py     批量测试与统计
+app/recording.py 用 ffmpeg 编码视频
 app/emojis.py    候选 emoji 集
 app/config.py    环境变量与模型注册表
 static/          网页（纯 HTML、CSS、JS）
@@ -190,8 +206,9 @@ scripts/         命令行批量脚本
 | 问题 | 解决办法 |
 |---|---|
 | 页面顶部提示没有配置密钥 | `.env` 里的 `EVOLINK_API_KEY` 为空。填好后重启服务 |
-| 对局因鉴权错误停止 | Key 写错、已被删除，或者还是占位符。到 <https://evolink.ai/dashboard/keys> 重新创建 |
+| 对局因鉴权错误停止 | Key 写错、已被删除，或者还是占位符。按“快速开始”第 1 步重新创建 |
 | 对局因余额或额度错误停止 | 到 EvoLink 控制台充值 |
 | 超时或连接失败 | 设置 `EVOLINK_BASE_URL=https://api.evolink.ai`，或调大 `LLM_TIMEOUT` |
+| 视频生成失败，提示里有 ffmpeg | 安装 ffmpeg（`brew install ffmpeg`）后重启服务 |
 | 改了 `.env` 没有生效 | 重启服务。`--reload` 只监听代码文件 |
 | macOS 开了系统代理 | 访问网关的请求会走代理。访问 `127.0.0.1` 和 `localhost` 的请求是直连，本地模拟网关仍可使用 |
