@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emoji 二十问</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="top">
+    <h1 id="title">Emoji 二十问</h1>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="zh">中文</button>
+      <button data-lang="en">English</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner hidden"></div>
+
+  <main class="wrap">
+    <section id="setup" class="card setup">
+      <label><span data-i18n="guesserModel"></span><select id="model"></select></label>
+      <label><span data-i18n="judgeModel"></span><select id="judge"></select></label>
+      <label><span data-i18n="secretEmoji"></span><select id="emoji"></select></label>
+      <button id="start" class="primary" data-i18n="start"></button>
+      <p class="hint" data-i18n="hint"></p>
+    </section>
+
+    <!-- 整局只有一个卡片：模型 → 轨迹 → 答案 → overview -->
+    <section id="game" class="card game hidden">
+      <div class="heads">
+        <div class="who">
+          <div class="eyebrow" data-i18n="guessEyebrow"></div>
+          <h2 id="guess-name"></h2>
+          <div id="guess-id" class="sub"></div>
+        </div>
+        <div class="who">
+          <div class="eyebrow" data-i18n="judgeEyebrow"></div>
+          <h2 id="judge-name"></h2>
+          <div id="judge-id" class="sub"></div>
+        </div>
+        <div class="state">
+          <div id="status" class="status"></div>
+          <div class="sub"><span data-i18n="turn"></span> <span id="turns">0</span> / <span id="max">20</span></div>
+        </div>
+      </div>
+
+      <div class="rows-head">
+        <span class="n">#</span><span class="chip-h"></span><span class="txt" data-i18n="logEyebrow"></span>
+        <span class="yn"></span><span class="ms">Guess</span><span class="ms">Judge</span><span class="ms">Total</span><span class="ms cost" data-i18n="colCost"></span>
+      </div>
+      <ol id="rows" class="rows"></ol>
+
+      <div id="reveal" class="reveal"></div>
+
+      <div class="overview">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="overview"></th>
+              <th data-i18n="colModel"></th>
+              <th class="num" data-i18n="colCalls"></th>
+              <th class="num" data-i18n="colTime"></th>
+              <th class="num" data-i18n="colTokens"></th>
+              <th class="num" data-i18n="colCost"></th>
+            </tr>
+          </thead>
+          <tbody id="overview-rows"></tbody>
+        </table>
+        <p id="cost-note" class="hint"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
